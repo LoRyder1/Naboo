@@ -1,0 +1,269 @@
+---
+- name: Manage Dell iDRAC (No OS Installed)
+  hosts: idrac_servers # Or 'all' if you used 'all' in your YAML inventory
+  gather_facts: false # No OS to gather facts from via SSH
+
+  tasks:
+    - name: Get iDRAC System Information (Redfish)
+      community.general.idrac_redfish_info:
+        baseuri: "https://{{ ansible_host }}" # Uses the IP from inventory, which is 192.168.50.50
+        username: "{{ idrac_user }}"       # Uses user from inventory
+        password: "{{ idrac_password }}"   # Uses password from inventory
+        category: Manager
+        command: GetManagerAttributes
+      register: idrac_info_result
+
+    - name: Debug iDRAC Info
+      debug:
+        var: idrac_info_result
+
+
+# ---
+# - name: Manage Dell iDRAC (No OS Installed)
+#   hosts: idrac_servers
+#   gather_facts: false # Usually not needed for iDRAC interaction directly
+
+#   vars:
+#     # Define these in your inventory, group_vars, or host_vars,
+#     # or prompt for them using vars_prompt
+#     idrac_ip: 192.168.50.50 # Or use inventory_hostname if your inventory has IPs
+#     idrac_user: "root" # Or your iDRAC username
+#     idrac_password: "calvin" # Or your iDRAC password
+#     # It's highly recommended to use Ansible Vault for sensitive data like passwords!
+
+#   tasks:
+#     - name: Get iDRAC System Information (Redfish)
+#       community.general.idrac_redfish_info:
+#         baseuri: "https://{{ idrac_ip }}" # Use HTTPS for security
+#         username: "{{ idrac_user }}"
+#         password: "{{ idrac_password }}"
+#         validate_certs: false # Set to true if you have valid iDRAC certs and have them trusted
+#         category: Manager # Example: Get information about the iDRAC itself
+#         command: GetManagerAttributes # Example: Get all attributes of the manager
+#       register: idrac_info_result
+
+
+# ---
+# - name: Manage Dell iDRAC (No OS Installed)
+#   hosts: idrac_servers # Refers to the group in your inventory
+#   connection: local   # Crucial: Run tasks on the control node, not via SSH to the iDRAC
+#   gather_facts: false # Disable OS fact gathering as there's no OS
+
+#   # # Load variables from your vault file
+#   # vars_files:
+#   #   - vault.yml
+
+#   tasks:
+#     - name: Get iDRAC System Information (Redfish)
+#       community.general.idrac_redfish_info:
+#         baseuri: "{{ idrac_baseuri }}"
+#         idrac_ip: "{{ inventory_hostname }}" # Uses the IP/hostname from inventory
+#         idrac_user: "{{ idrac_user }}"
+#         idrac_password: "{{ idrac_password }}"
+#         # command: get_system_info # This is for older iDRACs (WS-MAN)
+#         # Newer iDRACs (starting with 9, mostly Redfish) often rely on default behavior
+#         # or specific properties. For Redfish, you often don't need 'command' like this.
+#         # Just connecting and asking for properties will leverage Redfish.
+#         # If your iDRAC is older and uses WS-MAN/SOAP, you might need 'command: get_system_info'
+#       delegate_to: localhost # Explicitly run this task on the control node
+#       register: system_info
+#       tags: info
+
+
+# ---
+# - name: Call Redfish module to get server information
+#   hosts: all       # Target the host(s) defined in inventory.yml
+#   gather_facts: false        # Prevent default SSH-based fact gathering
+
+#   tasks:
+#     - name: Get system model and power state using redfish_info module
+#       community.general.redfish_info: # <--- This is the module call
+#         base_url: "https://{{ inventory_hostname }}" # URL to the iDRAC
+#         username: "{{ ansible_user }}"               # From inventory
+#         password: "{{ ansible_password }}"           # From inventory
+#         category: Systems                          # Request 'Systems' data from Redfish
+#         validate_certs: "{{ ansible_redfish_validate_certs | default(true) }}" # From inventory, with default
+#       register: system_data # Store the module's output in this variable
+
+#     - name: Display the gathered system data
+#       ansible.builtin.debug:
+#         msg: |
+#           Server Model: {{ system_data.redfish_facts.Systems[0].Model | default('N/A') }}
+#           Power State: {{ system_data.redfish_facts.Systems[0].PowerState | default('N/A') }}
+#           Service Tag: {{ system_data.redfish_facts.Systems[0].SKU | default('N/A') }}
+#           # You can debug the entire output to see all available data:
+#           # debug:
+#           #   var: system_data.redfish_facts
+
+
+# - name: Gather iDRAC info using Redfish API
+#   hosts: idrac_servers
+#   gather_facts: false
+#   vars:
+#     redfish_host: "https://192.168.50.50"   # iDRAC IP or hostname
+#     redfish_user: "root"                   # iDRAC username
+#     redfish_password: "calvin"           # iDRAC password
+#   tasks:
+#     - name: Get system info via Redfish
+#       uri:
+#         url: "{{ redfish_host }}/redfish/v1/Systems/System.Embedded.1"
+#         method: GET
+#         user: "{{ redfish_user }}"
+#         password: "{{ redfish_password }}"
+#         force_basic_auth: yes
+#         validate_certs: no  # Set to yes if SSL certs are valid
+#       register: system_info
+
+#     - name: Show system info
+#       debug:
+#         var: system_info.json
+
+    # - name: Get chassis info via Redfish
+    #   uri:
+    #     url: "{{ redfish_host }}/redfish/v1/Chassis/System.Embedded.1"
+    #     method: GET
+    #     user: "{{ redfish_user }}"
+    #     password: "{{ redfish_password }}"
+    #     force_basic_auth: yes
+    #     validate_certs: no
+    #   register: chassis_info
+
+    # - name: Show chassis info
+    #   debug:
+    #     var: chassis_info.json
+
+
+
+
+
+# ---
+# - name: Gather basic information from iDRAC server
+#   hosts: idrac_servers # This host is a logical identifier for your iDRAC
+#   gather_facts: false # No need to gather facts from the remote iDRAC
+
+#   tasks:
+#     - name: Get iDRAC and server system information
+#       community.general.redfish_info:
+#         # Explicitly pass the base_url, which is the IP/hostname of the iDRAC
+#         base_url: "https://{{ inventory_hostname }}" # Use https for Redfish
+#         username: "{{ ansible_user }}"
+#         password: "{{ ansible_password }}"
+#         category: Systems
+#         command: GetBios
+#         # Set SSL verification based on your iDRAC's certificate
+#         validate_certs: false # Change to true if your iDRAC has a trusted SSL cert
+#       register: system_info_result
+#       ignore_errors: true # Continue even if one info retrieval fails
+
+#     # ... (rest of your tasks, ensuring base_url, username, password, and validate_certs are passed to each redfish_info task)
+
+
+
+
+
+
+
+
+# ---
+# - name: Gather basic information from iDRAC server
+#   hosts: idrac_servers
+#   gather_facts: false # No need to gather facts from the local control node
+
+#   tasks:
+#     - name: Get iDRAC and server system information
+#       community.general.redfish_info:
+#         base_url: "{{ inventory_hostname }}" # Uses the IP/hostname from inventory
+#         username: "{{ ansible_user }}"
+#         password: "{{ ansible_password }}"
+#         category: Systems
+#         command: GetBios # This gets BIOS settings, including basic system info
+#       register: system_info_result
+#       ignore_errors: true # Continue even if one info retrieval fails
+
+    # - name: Get network interface information
+    #   community.general.redfish_info:
+    #     base_url: "{{ inventory_hostname }}"
+    #     username: "{{ ansible_user }}"
+    #     password: "{{ ansible_password }}"
+    #     category: EthernetInterfaces
+    #   register: network_info_result
+    #   ignore_errors: true
+
+    # - name: Get power and thermal metrics
+    #   community.general.redfish_info:
+    #     base_url: "{{ inventory_hostname }}"
+    #     username: "{{ ansible_user }}"
+    #     password: "{{ ansible_password }}"
+    #     category: Thermal
+    #   register: thermal_info_result
+    #   ignore_errors: true
+
+    # - name: Get power readings
+    #   community.general.redfish_info:
+    #     base_url: "{{ inventory_hostname }}"
+    #     username: "{{ ansible_user }}"
+    #     password: "{{ ansible_password }}"
+    #     category: Power
+    #   register: power_info_result
+    #   ignore_errors: true
+
+    # - name: Get Manager (iDRAC) information
+    #   community.general.redfish_info:
+    #     base_url: "{{ inventory_hostname }}"
+    #     username: "{{ ansible_user }}"
+    #     password: "{{ ansible_password }}"
+    #     category: Managers
+    #   register: manager_info_result
+    #   ignore_errors: true
+
+    # - name: Display collected system information
+    #   ansible.builtin.debug:
+    #     msg: |
+    #       --- System Information ---
+    #       Model: {{ system_info_result.redfish_facts.Systems[0].Model | default('N/A') }}
+    #       Manufacturer: {{ system_info_result.redfish_facts.Systems[0].Manufacturer | default('N/A') }}
+    #       Service Tag: {{ system_info_result.redfish_facts.Systems[0].SKU | default('N/A') }}
+    #       BIOS Version: {{ system_info_result.redfish_facts.Systems[0].BiosVersion | default('N/A') }}
+    #       Processor Count: {{ system_info_result.redfish_facts.Systems[0].ProcessorSummary.Count | default('N/A') }}
+    #       Total Memory (MiB): {{ system_info_result.redfish_facts.Systems[0].MemorySummary.TotalSystemMemoryGiB | default('N/A') * 1024 }}
+    #       Power State: {{ system_info_result.redfish_facts.Systems[0].PowerState | default('N/A') }}
+    #       Health State: {{ system_info_result.redfish_facts.Systems[0].Status.Health | default('N/A') }}
+
+    # - name: Display iDRAC (Manager) Information
+    #   ansible.builtin.debug:
+    #     msg: |
+    #       --- iDRAC Information ---
+    #       iDRAC Firmware Version: {{ manager_info_result.redfish_facts.Managers[0].FirmwareVersion | default('N/A') }}
+    #       iDRAC Model: {{ manager_info_result.redfish_facts.Managers[0].Model | default('N/A') }}
+    #       iDRAC Name: {{ manager_info_result.redfish_facts.Managers[0].Name | default('N/A') }}
+    #       iDRAC Type: {{ manager_info_result.redfish_facts.Managers[0].ManagerType | default('N/A') }}
+    #       iDRAC Health State: {{ manager_info_result.redfish_facts.Managers[0].Status.Health | default('N/A') }}
+
+    # - name: Display Network Interface Information (example for first NIC)
+    #   when: network_info_result.redfish_facts.EthernetInterfaces is defined and network_info_result.redfish_facts.EthernetInterfaces | length > 0
+    #   ansible.builtin.debug:
+    #     msg: |
+    #       --- Network Interface (First) ---
+    #       MAC Address: {{ network_info_result.redfish_facts.EthernetInterfaces[0].MACAddress | default('N/A') }}
+    #       IPv4 Address: {{ network_info_result.redfish_facts.EthernetInterfaces[0].IPv4Addresses[0].Address | default('N/A') if network_info_result.redfish_facts.EthernetInterfaces[0].IPv4Addresses | length > 0 else 'N/A' }}
+    #       Link Status: {{ network_info_result.redfish_facts.EthernetInterfaces[0].LinkStatus | default('N/A') }}
+    #       Speed (Mbps): {{ network_info_result.redfish_facts.EthernetInterfaces[0].SpeedMbps | default('N/A') }}
+
+    # - name: Display Thermal Information (summary)
+    #   when: thermal_info_result.redfish_facts.Thermal is defined
+    #   ansible.builtin.debug:
+    #     msg: |
+    #       --- Thermal Summary ---
+    #       Fans: {{ thermal_info_result.redfish_facts.Thermal.Fans | length | default('0') }}
+    #       Temperatures: {{ thermal_info_result.redfish_facts.Thermal.Temperatures | length | default('0') }}
+    #       Thermal Health: {{ thermal_info_result.redfish_facts.Thermal.Status.Health | default('N/A') }}
+
+    # - name: Display Power Information (summary)
+    #   when: power_info_result.redfish_facts.Power is defined
+    #   ansible.builtin.debug:
+    #     msg: |
+    #       --- Power Summary ---
+    #       Power Control: {{ power_info_result.redfish_facts.Power.PowerControl[0].PowerConsumedWatts | default('N/A') }} Watts (Current)
+    #       Power Control Health: {{ power_info_result.redfish_facts.Power.PowerControl[0].Status.Health | default('N/A') }}
+    #       Power Supplies: {{ power_info_result.redfish_facts.Power.PowerSupplies | length | default('0') }}
+    #       Power Health: {{ power_info_result.redfish_facts.Power.Status.Health | default('N/A') }}

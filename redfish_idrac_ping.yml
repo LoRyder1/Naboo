@@ -1,0 +1,32 @@
+---
+- name: Connect to iDRAC via Redfish and get system info
+  hosts: idracs
+  connection: local # Important: Redfish connection is made from the Ansible control node
+  gather_facts: false # No need to gather facts from the iDRAC itself
+
+  tasks:
+    - name: Get Redfish System Collection information
+      community.general.redfish_info:
+        baseuri: "{{ idrac_ip }}" # Redfish typically uses HTTPS
+        username: "{{ idrac_user }}"
+        password: "{{ idrac_password }}"
+        category: "Systems" # Request information from the /redfish/v1/Systems endpoint
+        validate_certs: "{{ validate_certs }}"
+      register: redfish_systems_info
+
+    - name: Display details of the first system found (usually the server itself)
+      debug:
+        msg: |
+          iDRAC IP: {{ idrac_ip }}
+          System Name: {{ redfish_systems_info.redfish_facts.Systems[0].Name | default('N/A') }}
+          Model: {{ redfish_systems_info.redfish_facts.Systems[0].Model | default('N/A') }}
+          Manufacturer: {{ redfish_systems_info.redfish_facts.Systems[0].Manufacturer | default('N/A') }}
+          Service Tag: {{ redfish_systems_info.redfish_facts.Systems[0].PartNumber | default('N/A') }} # PartNumber often contains service tag/serial
+          Power State: {{ redfish_systems_info.redfish_facts.Systems[0].PowerState | default('N/A') }}
+          Health Status: {{ redfish_systems_info.redfish_facts.Systems[0].Status.Health | default('N/A') }}
+      when: redfish_systems_info.redfish_facts.Systems is defined and redfish_systems_info.redfish_facts.Systems | length > 0
+
+    - name: Display raw redfish_systems_info for full debugging (optional)
+      debug:
+        var: redfish_systems_info
+      when: ansible_verbosity >= 2 # Only show if you run with -vv or higher

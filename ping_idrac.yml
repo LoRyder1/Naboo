@@ -1,0 +1,24 @@
+---
+- name: Test connectivity to iDRACs and get system info
+  hosts: idracs
+  connection: local # iDRACs are managed directly from the Ansible control node
+  gather_facts: false # No need to gather facts from iDRACs themselves
+
+  tasks:
+    - name: Get iDRAC system inventory
+      dellemc.openmanage.idrac_system_info:
+        idrac_ip: "{{ idrac_ip }}"
+        idrac_user: "{{ idrac_user }}"
+        idrac_password: "{{ idrac_password }}"
+        validate_certs: "{{ validate_certs }}"
+      register: idrac_info
+
+    - name: DEBUG - Display full idrac_info output
+      debug:
+        var: idrac_info
+        verbosity: 1 # Show even in normal output, or 3 for -vvv output
+
+    - name: Display iDRAC service tag and hostname
+      debug:
+        msg: "iDRAC {{ idrac_ip }} - Service Tag: {{ idrac_info.system_info.ServiceTag }}, Hostname: {{ idrac_info.system_info.HostName }}"
+      when: idrac_info.system_info.ServiceTag is defined

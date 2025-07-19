@@ -1,0 +1,41 @@
+# Alternative correct inventory using IP as the host key
+all:
+  children:
+    idracs:
+      hosts:
+        192.168.50.50: # The IP itself can be the host key
+          idrac_ip: 192.168.50.50 # This variable is still needed by the idrac_system_info module
+      vars:
+        idrac_user: "root"
+        idrac_password: "calvin"
+        validate_certs: false
+
+
+
+
+
+
+# ---
+# idrac_servers:
+#   hosts:
+#     192.168.50.50:
+#       ansible_connection: community.general.httpapi
+#       idrac_user: root
+#       idrac_password: calvin
+#       ansible_httpapi_use_ssl: true
+#       ansible_redfish_validate_certs: false
+
+# # ---
+# # # File: inventory_simple.yml
+# # all:
+# #   hosts:
+# #     192.168.50.50:
+# #       ansible_user: root
+# #       ansible_password: calvin
+# #       ansible_redfish_validate_certs: false
+
+
+# # export ANSIBLE_COLLECTIONS_PATHS="/opt/homebrew/Cellar/ansible/11.7.0_1/libexec/lib/python3.13/site-packages/ansible_collections/community/general:$ANSIBLE_COLLECTIONS_PATHS" # Replace with your actual path
+# # ansible-playbook -i your_inventory.ini get_idrac_info.yml
+
+
